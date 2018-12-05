@@ -8,7 +8,6 @@ from scipy.signal import find_peaks
 from scipy.signal import peak_widths
 from scipy.special import erf
 from scipy.optimize import curve_fit
-from sklearn import mixture
 import matplotlib.mlab as mlab
 import math
 
@@ -16,9 +15,9 @@ values_x = []
 values_y = []
 gaussian_x = []
 gaussian_y = []
-
+    
 #'r' preceding the string turns off the eight-character Unicode escape (for a raw string)
-workbook = xlrd.open_workbook(r"C:\Users\robik\Desktop\HDL.xls")
+workbook = xlrd.open_workbook(r"C:\Users\Robert\Desktop\HDL.xls")
 
 #Get worksheet by index
 worksheet = workbook.sheet_by_index(0)
@@ -33,52 +32,51 @@ for columnIndex in range (0, worksheet.ncols):
 
 
 #Define gaussian
-def gaussian(x, mu, sig):
-    return np.exp(-np.power(x - mu, 2.) / (2 * np.power(sig, 2.)))
+def gaussian(x, pars):
+    height = pars[0]
+    center = pars[1]
+    width = pars[2]
+    offset = pars[3]
+    return height*np.exp(-(x - center)**2/(2*width**2)) + offset
 
 #, = tuple unpacking
 peaks, _ = (find_peaks(values_y))
+
 for i in peaks:
     plt.plot(values_x[i],values_y[i],"x")
 
-#Substract baseline
-baseline = np.mean(values_y[0:10])
-values_y -= baseline
+#Define two peaks
+def twoGaussians(x,height1,center1,width1,offset1,height2,center2,width2,offset2):
+    f1 = gaussian(x,[height1,center1,width1,offset1])
+    f2 = gaussian(x,[height2,center2,width2,offset2])
+    return f1+f2
 
+gaussianTest = []
+guess = [500,values_x[peaks[0]],0.7,0,800,values_x[peaks[1]],0.3,0]
+for i in values_x:
+    gaussianTest.append(twoGaussians(i,500,values_x[peaks[0]],0.7,0,800,values_x[peaks[1]],0.3,0))
 
-#erf - Returns the error function of complex argument
-def asym_peak(t, pars):
-    'from Anal. Chem. 1994, 66, 1294-1301'
-    a0 = pars[0]  # peak area
-    a1 = pars[1]  # elution time
-    a2 = pars[2]  # width of gaussian
-    a3 = pars[3]  # exponential damping term
-    f = (a0/2/a3*np.exp(a2**2/2.0/a3**2 + (a1 - t)/a3)
-        *(erf((t-a1)/(np.sqrt(2.0)*a2) - a2/np.sqrt(2.0)/a3) + 1.0))
-    return f
+peakWidths = peak_widths(values_y,peaks,rel_height = 0.5)
 
-#Single asterisk as used in function declaration allows variable number of arguments passed from calling environment
-def two_peaks(t, *pars):    
-    'function of two overlapping peaks'
-    a10 = pars[0]  # peak area
-    a11 = pars[1]  # elution time
-    a12 = pars[2]  # width of gaussian
-    a13 = pars[3]  # exponential damping term
-    a20 = pars[4]  # peak area
-    a21 = pars[5]  # elution time
-    a22 = pars[6]  # width of gaussian
-    a23 = pars[7]  # exponential damping term   
-    p1 = asym_peak(t, [a10, a11, a12, a13])
-    p2 = asym_peak(t, [a20, a21, a22, a23])
-    return p1 + p2
+popt, pcov = curve_fit(twoGaussians, values_x, values_y, p0=[500,values_x[peaks[0]],0.7,0,800,values_x[peaks[1]],0.3,0])
+fit1 = popt[0:4]
+fit1[3] = 0
+fit2 = popt[4:8]
+fit2[3] = 0
+print(fit1)
 
-test = np.array(values_x)
-parguess = (500, values_x[peaks[0]], 0.3, 0.05, 1000, values_x[peaks[1]], 0.5, 0.1)
-plt.plot(test,two_peaks(test,*parguess))
-plt.plot(values_x,values_y)
+gauss1 = gaussian(values_x,fit1)
+gauss2 = gaussian(values_x,fit2)
 
-#popt, pcov = curve_fit(two_peaks, test, values_y, parguess)
-#plt.plot(test, two_peaks(test, *popt), 'b-')
+#plt.plot(values_x,gaussianTest,label="Initial fit")
+plt.plot(values_x,values_y, label = "Raw data")
+plt.plot(values_x,gauss1, label = "Peak1")
+plt.plot(values_x,gauss2, label = "Peak2")
+plt.xlim(12,19)
+#plt.plot(values_x, twoGaussians(values_x, *popt), label = "Final fit")
+plt.legend()
+plt.show()
+
 #Draw raw data plot
 
-plt.show()
+
