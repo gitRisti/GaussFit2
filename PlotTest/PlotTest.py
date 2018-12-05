@@ -73,12 +73,12 @@ def two_peaks(t, *pars):
     return p1 + p2
 
 test = np.array(values_x)
-parguess = (1000, values_x[peaks[0]], 0.5, 0.05, 1000, values_x[peaks[1]], 0.3, 0.05)
+parguess = (500, values_x[peaks[0]], 0.3, 0.05, 1000, values_x[peaks[1]], 0.5, 0.1)
 plt.plot(test,two_peaks(test,*parguess))
 plt.plot(values_x,values_y)
 
-popt, pcov = curve_fit(two_peaks, test, values_y, parguess)
-plt.plot(test, two_peaks(test, *popt), 'b-')
+#popt, pcov = curve_fit(two_peaks, test, values_y, parguess)
+#plt.plot(test, two_peaks(test, *popt), 'b-')
 #Draw raw data plot
 
 plt.show()
