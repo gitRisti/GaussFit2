@@ -17,7 +17,7 @@ gaussian_x = []
 gaussian_y = []
     
 #'r' preceding the string turns off the eight-character Unicode escape (for a raw string)
-workbook = xlrd.open_workbook(r"C:\Users\Robert\Desktop\HDL.xls")
+workbook = xlrd.open_workbook(r"C:\Users\robik\Desktop\HDL.xls")
 
 #Get worksheet by index
 worksheet = workbook.sheet_by_index(0)
@@ -31,52 +31,61 @@ for columnIndex in range (0, worksheet.ncols):
             values_y.append(float(worksheet.cell(rowIndex,columnIndex).value))
 
 
-#Define gaussian
+#Define gaussian, ** = power operator
 def gaussian(x, pars):
     height = pars[0]
     center = pars[1]
     width = pars[2]
-    offset = pars[3]
-    return height*np.exp(-(x - center)**2/(2*width**2)) + offset
+    return height*np.exp(-(x - center)**2/(2*width**2))
 
 #, = tuple unpacking
-peaks, _ = (find_peaks(values_y))
+peaks, _ = (find_peaks(values_y,100))
 
 for i in peaks:
     plt.plot(values_x[i],values_y[i],"x")
 
 #Define two peaks
-def twoGaussians(x,height1,center1,width1,offset1,height2,center2,width2,offset2):
-    f1 = gaussian(x,[height1,center1,width1,offset1])
-    f2 = gaussian(x,[height2,center2,width2,offset2])
+#When calling a function, the * operator can be used to unpack 
+#an iterable into the arguments in the function call
+def twoGaussians(x,height1,center1,width1,height2,center2,width2):
+    f1 = gaussian(x,[height1,center1,width1])
+    f2 = gaussian(x,[height2,center2,width2])
     return f1+f2
 
 gaussianTest = []
-guess = [500,values_x[peaks[0]],0.7,0,800,values_x[peaks[1]],0.3,0]
+guess = [values_y[peaks[0]],values_x[peaks[0]],0.7,values_y[peaks[1]],values_x[peaks[1]],0.3]
 for i in values_x:
-    gaussianTest.append(twoGaussians(i,500,values_x[peaks[0]],0.7,0,800,values_x[peaks[1]],0.3,0))
+    gaussianTest.append(twoGaussians(i,*guess))
 
 peakWidths = peak_widths(values_y,peaks,rel_height = 0.5)
+print(peakWidths)
 
-popt, pcov = curve_fit(twoGaussians, values_x, values_y, p0=[500,values_x[peaks[0]],0.7,0,800,values_x[peaks[1]],0.3,0])
-fit1 = popt[0:4]
-fit1[3] = 0
-fit2 = popt[4:8]
-fit2[3] = 0
-print(fit1)
+popt, pcov = curve_fit(twoGaussians, values_x, values_y, p0=[*guess])
+fit1 = popt[0:3]
+fit2 = popt[3:7]
 
 gauss1 = gaussian(values_x,fit1)
 gauss2 = gaussian(values_x,fit2)
+area1 = (np.trapz(gauss1,values_x))
+area2 = (np.trapz(gauss2,values_x))
 
-#plt.plot(values_x,gaussianTest,label="Initial fit")
+
+
+#Draw raw data and final fit
 plt.plot(values_x,values_y, label = "Raw data")
-plt.plot(values_x,gauss1, label = "Peak1")
-plt.plot(values_x,gauss2, label = "Peak2")
-plt.xlim(12,19)
+#plt.plot(values_x,gaussianTest,label="Initial fit")
+plt.plot(values_x,gauss1, label = "HDL")
+plt.plot(values_x,gauss2, label = "HSA")
 #plt.plot(values_x, twoGaussians(values_x, *popt), label = "Final fit")
+
+#Axis manipulation
+plt.xlabel("Volume (ml)")
+plt.ylabel("OD280")
+ylim = plt.ylim()
+xlim = plt.xlim()
+plt.text(xlim[0]+xlim[0]/10,ylim[1]-ylim[1]/10,"HDL area: " + str(round(area1,2)))
+plt.text(xlim[0]+xlim[0]/10,ylim[1]-ylim[1]/6,"HSA area: " + str(round(area2,2)))
+
+
 plt.legend()
 plt.show()
-
-#Draw raw data plot
-
-
