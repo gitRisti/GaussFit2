@@ -38,11 +38,26 @@ def gaussian(x, pars):
     width = pars[2]
     return height*np.exp(-(x - center)**2/(2*width**2))
 
-#, = tuple unpacking
-peaks, _ = (find_peaks(values_y,100))
+#Show raw data and peaks
+plt.plot(values_x,values_y, label = "Raw data")
 
+peaks, _ = (find_peaks(values_y,100))
 for i in peaks:
     plt.plot(values_x[i],values_y[i],"x")
+nPeaks = peaks.shape
+print("Found " + str(nPeaks) + " peaks")
+plt.show()
+
+peak1_width = input("Enter initial width(0...1) for peak 1 \n")
+peak2_width = input("Enter initial width(0...1) for peak 2 \n")
+peak1_name = input("Enter name for peak1 \n")
+peak2_name = input("Enter name for peak2 \n")  
+
+peak1_width = float(peak1_width)
+peak2_width = float(peak2_width)
+
+#, = tuple unpacking
+
 
 #Define two peaks
 #When calling a function, the * operator can be used to unpack 
@@ -53,7 +68,8 @@ def twoGaussians(x,height1,center1,width1,height2,center2,width2):
     return f1+f2
 
 gaussianTest = []
-guess = [values_y[peaks[0]],values_x[peaks[0]],0.7,values_y[peaks[1]],values_x[peaks[1]],0.3]
+
+guess = [values_y[peaks[0]],values_x[peaks[0]],peak1_width,values_y[peaks[1]],values_x[peaks[1]],peak2_width]
 for i in values_x:
     gaussianTest.append(twoGaussians(i,*guess))
 
@@ -70,12 +86,11 @@ area1 = (np.trapz(gauss1,values_x))
 area2 = (np.trapz(gauss2,values_x))
 
 
-
 #Draw raw data and final fit
 plt.plot(values_x,values_y, label = "Raw data")
 #plt.plot(values_x,gaussianTest,label="Initial fit")
-plt.plot(values_x,gauss1, label = "HDL")
-plt.plot(values_x,gauss2, label = "HSA")
+plt.plot(values_x,gauss1, label = peak1_name)
+plt.plot(values_x,gauss2, label = peak2_name)
 #plt.plot(values_x, twoGaussians(values_x, *popt), label = "Final fit")
 
 #Axis manipulation
@@ -83,8 +98,8 @@ plt.xlabel("Volume (ml)")
 plt.ylabel("OD280")
 ylim = plt.ylim()
 xlim = plt.xlim()
-plt.text(xlim[0]+xlim[0]/10,ylim[1]-ylim[1]/10,"HDL area: " + str(round(area1,2)))
-plt.text(xlim[0]+xlim[0]/10,ylim[1]-ylim[1]/6,"HSA area: " + str(round(area2,2)))
+plt.text(xlim[0]+xlim[0]/10,ylim[1]-ylim[1]/10, peak1_name + " area: " + str(round(area1,2)))
+plt.text(xlim[0]+xlim[0]/10,ylim[1]-ylim[1]/6,peak2_name + " area: " + str(round(area2,2)))
 
 
 plt.legend()
