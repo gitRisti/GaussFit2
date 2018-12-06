@@ -16,9 +16,9 @@ values_y = []
 gaussian_x = []
 gaussian_y = []
 #Plasma data:
-#VLDL   7.48 0.3 
+#VLDL   7.52 0.3 
 #LDL    11.3 0.8
-#HDL    15.7 0.5
+#HDL    15.8 0.5
 #HSA    16.8 0.4
 
 #'r' preceding the string turns off the eight-character Unicode escape (for a raw string)
@@ -147,10 +147,11 @@ plt.xlabel("Volume (ml)")
 plt.ylabel("OD280")
 ylim = plt.ylim()
 xlim = plt.xlim()
-plt.text(xlim[0]+xlim[0]/10,ylim[1]-ylim[1]/10, peakNames[0] + " area: " + str(round(area1,2)))
-plt.text(xlim[0]+xlim[0]/10,ylim[1]-ylim[1]/8, peakNames[1] + " area: " + str(round(area2,2)))
-plt.text(xlim[0]+xlim[0]/10,ylim[1]-ylim[1]/7, peakNames[2] + " area: " + str(round(area3,2)))
-plt.text(xlim[0]+xlim[0]/10,ylim[1]-ylim[1]/6, peakNames[3] + " area: " + str(round(area4,2)))
-
+areaTexts = str(peakNames[0] + " area: " + str(round(area1,2))),str(peakNames[1] + " area: " + str(round(area2,2))),str(peakNames[2] + " area: " + str(round(area3,2))),str(peakNames[3] + " area: " + str(round(area4,2)))
+areaTexts = ("\n".join(areaTexts))
+#Create a text box
+areaTextBox = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+plt.text(xlim[0]+xlim[0]/10,ylim[1]-ylim[1]/10, areaTexts, fontsize=14,
+        verticalalignment='top', areaTextBox=props)
 plt.legend()
 plt.show()
