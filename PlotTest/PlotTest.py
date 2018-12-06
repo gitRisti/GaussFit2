@@ -16,13 +16,13 @@ values_y = []
 gaussian_x = []
 gaussian_y = []
 #Plasma data:
-#VLDL   7.48 0.3
+#VLDL   7.48 0.3 
 #LDL    11.3 0.8
 #HDL    15.7 0.5
 #HSA    16.8 0.4
 
 #'r' preceding the string turns off the eight-character Unicode escape (for a raw string)
-workbook = xlrd.open_workbook(r"C:\Users\Robert\Desktop\Plasma.xls")
+workbook = xlrd.open_workbook(r"C:\Users\Robert\Desktop\plasma.xls")
 
 #Get worksheet by index
 worksheet = workbook.sheet_by_index(0)
