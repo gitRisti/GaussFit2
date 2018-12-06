@@ -46,9 +46,10 @@ def gaussian(x, pars):
 #Show raw data and peaks
 plt.plot(values_x,values_y, label = "Raw data")
 plt.show()
-insertPeaksManually = input("Do you want to enter peaks manually? (Y/N) \n")
+figTitle = input("Enter sample name: \n")
+insertPeaksManually = input("Do you want to enter peaks manually? (y/n) \n")
 #Lõpuks teha nii, et saab hiirega vajutada graafikule ja valida punktid
-if insertPeaksManually == "Y":
+if insertPeaksManually == "y":
     pM = [] #Initial guesses for peak mean
     nPeaks = int(input("Please enter # of peaks:\n"))
     aM = []
@@ -63,7 +64,7 @@ if insertPeaksManually == "Y":
     for i in pM:
         plt.plot(values_x[i],values_y[i],"x")
         plt.plot(values_x[i],values_y[i],"x")
-elif insertPeaksManually == "N":
+elif insertPeaksManually == "n":
     #Find noise (standard deviation of baseline)
     noise = np.std(values_y[0:10])
     #, = tuple unpacking
@@ -100,12 +101,15 @@ def fourGaussians(x,height1,center1,width1,height2,center2,width2,height3,center
     f4 = gaussian(x,[height4,center4,width4])
     return f1+f2+f3+f4
 gaussianTest = []
-
+fit = []
+gauss = []
+areas = []
+guess = []
 if nPeaks == 2:
-    guess = [values_y[pM[0]],values_x[pM[0]],pW[0],values_y[pM[1]],values_x[pM[1]],pW[1]]
+    guess2 = [values_y[pM[0]],values_x[pM[0]],pW[0],values_y[pM[1]],values_x[pM[1]],pW[1]]
     for i in values_x:
-        gaussianTest.append(twoGaussians(i,*guess))
-    popt, pcov = curve_fit(twoGaussians, values_x, values_y, p0=[*guess])
+        gaussianTest.append(twoGaussians(i,*guess2))
+    popt, pcov = curve_fit(twoGaussians, values_x, values_y, p0=[*guess2])
     fit1 = popt[0:3]
     fit2 = popt[3:7]
     gauss1 = gaussian(values_x,fit1)
@@ -113,24 +117,21 @@ if nPeaks == 2:
     area1 = (np.trapz(gauss1,values_x))
     area2 = (np.trapz(gauss2,values_x))
 elif nPeaks == 4:
-    guess4 = [values_y[pM[0]],values_x[pM[0]],pW[0],values_y[pM[1]],values_x[pM[1]],pW[1],values_y[pM[2]],values_x[pM[2]],pW[2],values_y[pM[3]],values_x[pM[3]],pW[3]]
+    #Create list of initial parameters
+    for i in range(0,nPeaks):
+        #extend - for sequences, append - single elements
+        guess.extend((values_y[pM[i]],values_x[pM[i]],pW[i]))
     for i in values_x:
-        gaussianTest.append(fourGaussians(i,*guess4))
-    
-    popt, pcov = curve_fit(fourGaussians, values_x, values_y, p0=[*guess4])
-    fit1 = popt[0:3]
-    fit2 = popt[3:6]
-    fit3 = popt[6:9]
-    fit4 = popt[9:12]
-
-    gauss1 = gaussian(values_x,fit1)
-    gauss2 = gaussian(values_x,fit2)
-    gauss3 = gaussian(values_x,fit3)
-    gauss4 = gaussian(values_x,fit4)
-    area1 = (np.trapz(gauss1,values_x))
-    area2 = (np.trapz(gauss2,values_x))
-    area3 = (np.trapz(gauss3,values_x))
-    area4 = (np.trapz(gauss4,values_x))
+        gaussianTest.append(fourGaussians(i,*guess))
+    #Find fitting parameters
+    popt, pcov = curve_fit(fourGaussians, values_x, values_y, p0=[*guess])
+    #Create list of fitting parameters
+    for i in range (0,12,3):
+        fit.append(popt[i:i+3])
+    #Create lists of fitted gaussians and integrated areas
+    for i in range(0,nPeaks):
+        gauss.append(gaussian(values_x,fit[i]))
+        areas.append(np.trapz(gauss[i],values_x))
 
 #Draw raw data and final fit
 plt.plot(values_x,values_y, label = "Raw data")
@@ -138,20 +139,21 @@ plt.plot(values_x,gaussianTest,label="Initial fit")
 plt.show()
 plt.plot(values_x,values_y, label = "Raw data")
 #plt.plot(values_x, fourGaussians(values_x, *popt), label = "Final fit")
-plt.plot(values_x,gauss1, label = peakNames[0])
-plt.plot(values_x,gauss2, label = peakNames[1])
-plt.plot(values_x,gauss3, label = peakNames[2])
-plt.plot(values_x,gauss4, label = peakNames[3])
+plt.plot(values_x,gauss[0], label = peakNames[0])
+plt.plot(values_x,gauss[1], label = peakNames[1])
+plt.plot(values_x,gauss[2], label = peakNames[2])
+plt.plot(values_x,gauss[3], label = peakNames[3])
 #Axis manipulation
 plt.xlabel("Volume (ml)")
 plt.ylabel("OD280")
 ylim = plt.ylim()
 xlim = plt.xlim()
-areaTexts = str(peakNames[0] + " area: " + str(round(area1,2))),str(peakNames[1] + " area: " + str(round(area2,2))),str(peakNames[2] + " area: " + str(round(area3,2))),str(peakNames[3] + " area: " + str(round(area4,2)))
+areaTexts = str(peakNames[0] + " area: " + str(round(areas[0],2))),str(peakNames[1] + " area: " + str(round(areas[1],2))),str(peakNames[2] + " area: " + str(round(areas[2],2))),str(peakNames[3] + " area: " + str(round(areas[3],2)))
 areaTexts = ("\n".join(areaTexts))
 #Create a text box
 areaTextBox = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
 plt.text(xlim[0]+xlim[0]/10,ylim[1]-ylim[1]/10, areaTexts, fontsize=14,
-        verticalalignment='top', areaTextBox=props)
+        verticalalignment='top', bbox=areaTextBox)
 plt.legend()
+plt.suptitle(figTitle, fontsize=16)
 plt.show()
