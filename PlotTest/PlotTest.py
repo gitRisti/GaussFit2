@@ -18,8 +18,10 @@ gaussian_y = []
 #Plasma data:
 #VLDL   7.52 0.3 
 #LDL    11.3 0.8
+#REM    12.6 0.8
 #HDL    15.8 0.5
 #HSA    16.8 0.4
+
 
 #'r' preceding the string turns off the eight-character Unicode escape (for a raw string)
 workbook = xlrd.open_workbook(r"C:\Users\Robert\Desktop\plasma.xls")
@@ -79,7 +81,7 @@ plt.plot(values_x,values_y, label = "Raw data")
 plt.show()
 
 pW = [] #Initial guesses for peak width
-peakNames = ["VLDL","LDL","HDL","HSA"]
+peakNames = ["VLDL","LDL","HDL","REM","HSA"]
 
 for i in range(1,nPeaks+1):
     pW.append(float(input("Enter initial width(0...1) for peak " + str(i) + "\n")))
@@ -93,13 +95,13 @@ def twoGaussians(x,height1,center1,width1,height2,center2,width2):
     f1 = gaussian(x,[height1,center1,width1])
     f2 = gaussian(x,[height2,center2,width2])
     return f1+f2
-
-def fourGaussians(x,height1,center1,width1,height2,center2,width2,height3,center3,width3,height4,center4,width4):
+def fiveGaussians(x,height1,center1,width1,height2,center2,width2,height3,center3,width3,height4,center4,width4,height5,center5,width5):
     f1 = gaussian(x,[height1,center1,width1])
     f2 = gaussian(x,[height2,center2,width2])
     f3 = gaussian(x,[height3,center3,width3])
     f4 = gaussian(x,[height4,center4,width4])
-    return f1+f2+f3+f4
+    f5 = gaussian(x,[height5,center5,width5])
+    return f1+f2+f3+f4+f5
 gaussianTest = []
 fit = []
 gauss = []
@@ -116,17 +118,17 @@ if nPeaks == 2:
     gauss2 = gaussian(values_x,fit2)
     area1 = (np.trapz(gauss1,values_x))
     area2 = (np.trapz(gauss2,values_x))
-elif nPeaks == 4:
+elif nPeaks == 5:
     #Create list of initial parameters
     for i in range(0,nPeaks):
         #extend - for sequences, append - single elements
         guess.extend((values_y[pM[i]],values_x[pM[i]],pW[i]))
     for i in values_x:
-        gaussianTest.append(fourGaussians(i,*guess))
+        gaussianTest.append(fiveGaussians(i,*guess))
     #Find fitting parameters
-    popt, pcov = curve_fit(fourGaussians, values_x, values_y, p0=[*guess])
+    popt, pcov = curve_fit(fiveGaussians, values_x, values_y, p0=[*guess])
     #Create list of fitting parameters
-    for i in range (0,12,3):
+    for i in range (0,nPeaks*3,3):
         fit.append(popt[i:i+3])
     #Create lists of fitted gaussians and integrated areas
     for i in range(0,nPeaks):
@@ -138,17 +140,18 @@ plt.plot(values_x,values_y, label = "Raw data")
 plt.plot(values_x,gaussianTest,label="Initial fit")
 plt.show()
 plt.plot(values_x,values_y, label = "Raw data")
-#plt.plot(values_x, fourGaussians(values_x, *popt), label = "Final fit")
+plt.plot(values_x, fiveGaussians(values_x, *popt), label = "Final fit")
 plt.plot(values_x,gauss[0], label = peakNames[0])
 plt.plot(values_x,gauss[1], label = peakNames[1])
 plt.plot(values_x,gauss[2], label = peakNames[2])
 plt.plot(values_x,gauss[3], label = peakNames[3])
+plt.plot(values_x,gauss[4], label = peakNames[4])
 #Axis manipulation
 plt.xlabel("Volume (ml)")
 plt.ylabel("OD280")
 ylim = plt.ylim()
 xlim = plt.xlim()
-areaTexts = str(peakNames[0] + " area: " + str(round(areas[0],2))),str(peakNames[1] + " area: " + str(round(areas[1],2))),str(peakNames[2] + " area: " + str(round(areas[2],2))),str(peakNames[3] + " area: " + str(round(areas[3],2)))
+areaTexts = str(peakNames[0] + " area: " + str(round(areas[0],2))),str(peakNames[1] + " area: " + str(round(areas[1],2))),str(peakNames[2] + " area: " + str(round(areas[2],2))),str(peakNames[3] + " area: " + str(round(areas[3],2))),str(peakNames[4] + " area: " + str(round(areas[4],2)))
 areaTexts = ("\n".join(areaTexts))
 #Create a text box
 areaTextBox = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
