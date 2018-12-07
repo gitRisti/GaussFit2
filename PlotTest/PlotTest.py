@@ -57,6 +57,7 @@ figTitle = input("Enter sample name: \n")
 insertPeaksManually = input("Do you want to enter peaks manually? (y/n/5/6) \n")
 #Lõpuks teha nii, et saab hiirega vajutada graafikule ja valida punktid
 if insertPeaksManually == "y":
+    peakNames = []
     pM = [] #Initial guesses for peak mean
     nPeaks = int(input("Please enter # of peaks:\n"))
     aM = []
@@ -71,6 +72,8 @@ if insertPeaksManually == "y":
     for i in pM:
         plt.plot(values_x[i],values_y[i],"x")
         plt.plot(values_x[i],values_y[i],"x")
+    for i in range(1,nPeaks+1):
+        peakNames.append(input("Enter name for peak " + str(i) + "\n"))
 elif insertPeaksManually == "n":
     #Find noise (standard deviation of baseline)
     noise = np.std(values_y[0:10])
@@ -121,8 +124,6 @@ plt.show()
 if insertPeaksManually == "y" or insertPeaksManually == "n":
     for i in range(1,nPeaks+1):
         pW.append(float(input("Enter initial width(0...1) for peak " + str(i) + "\n")))
-#for i in range(1,nPeaks+1):
-  #  peakNames.append(input("Enter name for peak " + str(i) + "\n"))
 
 #When calling a function, the * operator can be used to unpack 
 #an iterable into the arguments in the function call
