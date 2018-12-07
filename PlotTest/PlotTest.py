@@ -20,11 +20,11 @@ gaussian_y = []
 #LDL    11.3 0.8
 #REM    12.6 0.8
 #HDL    15.8 0.5
-#HSA    16.8 0.4
+#HSA    16.8 0.3
 
 
 #'r' preceding the string turns off the eight-character Unicode escape (for a raw string)
-workbook = xlrd.open_workbook(r"C:\Users\Robert\Desktop\plasma.xls")
+workbook = xlrd.open_workbook(r"C:\Users\robik\Desktop\mimetic.xls")
 
 #Get worksheet by index
 worksheet = workbook.sheet_by_index(0)
@@ -37,19 +37,24 @@ for columnIndex in range (0, worksheet.ncols):
         if columnIndex == 1:
             values_y.append(float(worksheet.cell(rowIndex,columnIndex).value))
 
+#List of variables
+pW = [] #Initial guesses for peak width
 
 #Define gaussian, ** = power operator
+#NMRi jaoks lorentz
 def gaussian(x, pars):
     height = pars[0]
     center = pars[1]
     width = pars[2]
     return height*np.exp(-(x - center)**2/(2*width**2))
 
-#Show raw data and peaks
-plt.plot(values_x,values_y, label = "Raw data")
-plt.show()
+#Show raw data
+showRawData = False
+if showRawData == True:
+    plt.plot(values_x,values_y, label = "Raw data")
+    plt.show()
 figTitle = input("Enter sample name: \n")
-insertPeaksManually = input("Do you want to enter peaks manually? (y/n) \n")
+insertPeaksManually = input("Do you want to enter peaks manually? (y/n/5/6) \n")
 #Lõpuks teha nii, et saab hiirega vajutada graafikule ja valida punktid
 if insertPeaksManually == "y":
     pM = [] #Initial guesses for peak mean
@@ -77,56 +82,74 @@ elif insertPeaksManually == "n":
     nPeaks = peaks.shape
     nPeaks = nPeaks[0]
     print("Found " + str(nPeaks) + " peaks")
+elif insertPeaksManually == "5":
+    peakNames = ["VLDL","LDL","REM","HDL","HSA"]
+    pM = [] #Initial guesses for peak mean
+    aM = []
+    nPeaks = 5
+    indices = [7.52,11.3,12.6,15.8,16.8]
+    print(len(indices))
+    for a in range(0,nPeaks):
+        for i in range(0, len(values_x)):
+            aM.append(np.abs(values_x[i]-indices[a]))
+        pM.append(np.argmin(aM))
+        aM.clear()
+    for i in pM:
+        plt.plot(values_x[i],values_y[i],"x")
+        plt.plot(values_x[i],values_y[i],"x")
+    pW = [0.3,0.8,0.8,0.5,0.3]
+elif insertPeaksManually == "6":
+    peakNames = ["VLDL","LDL","REM","HDL","HSA","PROD"]
+    pM = [] #Initial guesses for peak mean
+    aM = []
+    nPeaks = 6
+    indices = [7.52,11.3,12.6,15.6,16.3,16.97]
+    print(len(indices))
+    for a in range(0,nPeaks):
+        for i in range(0, len(values_x)):
+            aM.append(np.abs(values_x[i]-indices[a]))
+        pM.append(np.argmin(aM))
+        aM.clear()
+    for i in pM:
+        plt.plot(values_x[i],values_y[i],"x")
+        plt.plot(values_x[i],values_y[i],"x")
+    pW = [0.3,0.8,0.8,0.4,0.2,0.2]
 plt.plot(values_x,values_y, label = "Raw data")
 plt.show()
 
-pW = [] #Initial guesses for peak width
-peakNames = ["VLDL","LDL","HDL","REM","HSA"]
 
-for i in range(1,nPeaks+1):
-    pW.append(float(input("Enter initial width(0...1) for peak " + str(i) + "\n")))
+if insertPeaksManually == "y" or insertPeaksManually == "n":
+    for i in range(1,nPeaks+1):
+        pW.append(float(input("Enter initial width(0...1) for peak " + str(i) + "\n")))
 #for i in range(1,nPeaks+1):
   #  peakNames.append(input("Enter name for peak " + str(i) + "\n"))
 
-#Define two peaks
 #When calling a function, the * operator can be used to unpack 
 #an iterable into the arguments in the function call
-def twoGaussians(x,height1,center1,width1,height2,center2,width2):
-    f1 = gaussian(x,[height1,center1,width1])
-    f2 = gaussian(x,[height2,center2,width2])
-    return f1+f2
-def fiveGaussians(x,height1,center1,width1,height2,center2,width2,height3,center3,width3,height4,center4,width4,height5,center5,width5):
-    f1 = gaussian(x,[height1,center1,width1])
-    f2 = gaussian(x,[height2,center2,width2])
-    f3 = gaussian(x,[height3,center3,width3])
-    f4 = gaussian(x,[height4,center4,width4])
-    f5 = gaussian(x,[height5,center5,width5])
-    return f1+f2+f3+f4+f5
+#Repack guess after receiving using *
+def nGaussians(x,*params):
+    gaussianSum = 0
+    for i in range (0,nPeaks*3,3):
+        gaussianSum += gaussian(x,[params[i],params[i+1],params[i+2]])
+    return gaussianSum
+
 gaussianTest = []
 fit = []
 gauss = []
 areas = []
+percentAreas = []
 guess = []
-if nPeaks == 2:
-    guess2 = [values_y[pM[0]],values_x[pM[0]],pW[0],values_y[pM[1]],values_x[pM[1]],pW[1]]
-    for i in values_x:
-        gaussianTest.append(twoGaussians(i,*guess2))
-    popt, pcov = curve_fit(twoGaussians, values_x, values_y, p0=[*guess2])
-    fit1 = popt[0:3]
-    fit2 = popt[3:7]
-    gauss1 = gaussian(values_x,fit1)
-    gauss2 = gaussian(values_x,fit2)
-    area1 = (np.trapz(gauss1,values_x))
-    area2 = (np.trapz(gauss2,values_x))
-elif nPeaks == 5:
+totalArea = 0
+if nPeaks > 0:
     #Create list of initial parameters
     for i in range(0,nPeaks):
         #extend - for sequences, append - single elements
         guess.extend((values_y[pM[i]],values_x[pM[i]],pW[i]))
     for i in values_x:
-        gaussianTest.append(fiveGaussians(i,*guess))
+        #Unpack guess when sending to nGaussians using *
+        gaussianTest.append(nGaussians(i,*guess))
     #Find fitting parameters
-    popt, pcov = curve_fit(fiveGaussians, values_x, values_y, p0=[*guess])
+    popt, pcov = curve_fit(nGaussians, values_x, values_y, p0=[*guess])
     #Create list of fitting parameters
     for i in range (0,nPeaks*3,3):
         fit.append(popt[i:i+3])
@@ -134,29 +157,34 @@ elif nPeaks == 5:
     for i in range(0,nPeaks):
         gauss.append(gaussian(values_x,fit[i]))
         areas.append(np.trapz(gauss[i],values_x))
+        totalArea += areas[i]
+    for i in range(0,nPeaks):
+        percentAreas.append((areas[i]/totalArea)*100)
 
 #Draw raw data and final fit
 plt.plot(values_x,values_y, label = "Raw data")
 plt.plot(values_x,gaussianTest,label="Initial fit")
 plt.show()
 plt.plot(values_x,values_y, label = "Raw data")
-plt.plot(values_x, fiveGaussians(values_x, *popt), label = "Final fit")
-plt.plot(values_x,gauss[0], label = peakNames[0])
-plt.plot(values_x,gauss[1], label = peakNames[1])
-plt.plot(values_x,gauss[2], label = peakNames[2])
-plt.plot(values_x,gauss[3], label = peakNames[3])
-plt.plot(values_x,gauss[4], label = peakNames[4])
+plt.plot(values_x, nGaussians(values_x, *popt), label = "Final fit")
+#Plot single fitted gaussians
+for i in range (0,nPeaks):
+    plt.plot(values_x, gauss[i],label = peakNames[i])
 #Axis manipulation
 plt.xlabel("Volume (ml)")
 plt.ylabel("OD280")
+plt.suptitle(figTitle, fontsize=16)
 ylim = plt.ylim()
 xlim = plt.xlim()
-areaTexts = str(peakNames[0] + " area: " + str(round(areas[0],2))),str(peakNames[1] + " area: " + str(round(areas[1],2))),str(peakNames[2] + " area: " + str(round(areas[2],2))),str(peakNames[3] + " area: " + str(round(areas[3],2))),str(peakNames[4] + " area: " + str(round(areas[4],2)))
-areaTexts = ("\n".join(areaTexts))
-#Create a text box
+areaTexts = "\n"
+#Generate area text
+for i in range (0,nPeaks):
+    areaString = str(peakNames[i] + " area: " + str(round(areas[i],2)) + " ("+str(round(percentAreas[i],2)) + " %)\n")
+    areaTexts += areaString
+#Create a textbox
 areaTextBox = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+#Insert text to textbox
 plt.text(xlim[0]+xlim[0]/10,ylim[1]-ylim[1]/10, areaTexts, fontsize=14,
         verticalalignment='top', bbox=areaTextBox)
 plt.legend()
-plt.suptitle(figTitle, fontsize=16)
 plt.show()
