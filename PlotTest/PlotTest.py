@@ -15,6 +15,9 @@ values_x = []
 values_y = []
 gaussian_x = []
 gaussian_y = []
+#Default distribution fitMode = 1 is Gaussian
+fitMode = 1
+fixedPeaks = False
 #Plasma data:
 #VLDL   7.52 0.3 
 #LDL    11.3 0.8
@@ -22,9 +25,11 @@ gaussian_y = []
 #HDL    15.8 0.5
 #HSA    16.8 0.3
 
+#Mõõtmised vaja teha ~40 kraadi juures, siis on tulemused täpsemad ja paremini korratavad.
+#23 kraadi juures LDLi ja HDLi signaal väiksem ning varieeruvus mõõtmiste vahel suurem
 
 #'r' preceding the string turns off the eight-character Unicode escape (for a raw string)
-workbook = xlrd.open_workbook(r"C:\Users\robik\Desktop\mimetic.xls")
+workbook = xlrd.open_workbook(r"C:\Users\robik\Desktop\Mimetic.xls")
 
 #Get worksheet by index
 worksheet = workbook.sheet_by_index(0)
@@ -40,13 +45,16 @@ for columnIndex in range (0, worksheet.ncols):
 #List of variables
 pW = [] #Initial guesses for peak width
 
-#Define gaussian, ** = power operator
-#NMRi jaoks lorentz
-def gaussian(x, pars):
+def fitFormula(x,pars):
     height = pars[0]
     center = pars[1]
     width = pars[2]
-    return height*np.exp(-(x - center)**2/(2*width**2))
+    #Gaussian
+    if fitMode == 1:
+        return height*np.exp(-(x - center)**2/(2*width**2))
+    #Cauchy
+    if fitMode == 2:
+        return height*((width**2)/(((x-center)**2)+width**2))
 
 #Show raw data
 showRawData = False
@@ -54,6 +62,7 @@ if showRawData == True:
     plt.plot(values_x,values_y, label = "Raw data")
     plt.show()
 figTitle = input("Enter sample name: \n")
+fitMode = int(input("Choose distribution function: \n 1 - Gaussian \n 2 - Cauchy \n"))
 insertPeaksManually = input("Do you want to enter peaks manually? (y/n/5/6) \n")
 #Lõpuks teha nii, et saab hiirega vajutada graafikule ja valida punktid
 if insertPeaksManually == "y":
@@ -106,8 +115,7 @@ elif insertPeaksManually == "6":
     pM = [] #Initial guesses for peak mean
     aM = []
     nPeaks = 6
-    indices = [7.52,11.3,12.6,15.6,16.3,16.97]
-    print(len(indices))
+    indices = [7.45,11.4,14.2,15.65,16.29,17]
     for a in range(0,nPeaks):
         for i in range(0, len(values_x)):
             aM.append(np.abs(values_x[i]-indices[a]))
@@ -120,7 +128,6 @@ elif insertPeaksManually == "6":
 plt.plot(values_x,values_y, label = "Raw data")
 plt.show()
 
-
 if insertPeaksManually == "y" or insertPeaksManually == "n":
     for i in range(1,nPeaks+1):
         pW.append(float(input("Enter initial width(0...1) for peak " + str(i) + "\n")))
@@ -131,7 +138,7 @@ if insertPeaksManually == "y" or insertPeaksManually == "n":
 def nGaussians(x,*params):
     gaussianSum = 0
     for i in range (0,nPeaks*3,3):
-        gaussianSum += gaussian(x,[params[i],params[i+1],params[i+2]])
+        gaussianSum += fitFormula(x,[params[i],params[i+1],params[i+2]])
     return gaussianSum
 
 gaussianTest = []
@@ -143,9 +150,13 @@ guess = []
 totalArea = 0
 if nPeaks > 0:
     #Create list of initial parameters
-    for i in range(0,nPeaks):
+    if fixedPeaks == False:
+        for i in range(0,nPeaks):
         #extend - for sequences, append - single elements
-        guess.extend((values_y[pM[i]],values_x[pM[i]],pW[i]))
+            guess.extend((values_y[pM[i]],values_x[pM[i]],pW[i]))
+    elif fixedPeaks == True:
+        for i in range(0,nPeaks):
+            guess.extend((values_y[pM[i]],values_x[fixedPM[i]],pW[i]))
     for i in values_x:
         #Unpack guess when sending to nGaussians using *
         gaussianTest.append(nGaussians(i,*guess))
@@ -154,9 +165,10 @@ if nPeaks > 0:
     #Create list of fitting parameters
     for i in range (0,nPeaks*3,3):
         fit.append(popt[i:i+3])
+    print(popt)
     #Create lists of fitted gaussians and integrated areas
     for i in range(0,nPeaks):
-        gauss.append(gaussian(values_x,fit[i]))
+        gauss.append(fitFormula(values_x,fit[i]))
         areas.append(np.trapz(gauss[i],values_x))
         totalArea += areas[i]
     for i in range(0,nPeaks):
