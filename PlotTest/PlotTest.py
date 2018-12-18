@@ -24,26 +24,31 @@ fixedPeaks = False
 #REM    12.6 0.8
 #HDL    15.8 0.5
 #HSA    16.8 0.3
-
-#Mõõtmised vaja teha ~40 kraadi juures, siis on tulemused täpsemad ja paremini korratavad.
-#23 kraadi juures LDLi ja HDLi signaal väiksem ning varieeruvus mõõtmiste vahel suurem
+#NMRi spektri intensiivsuse kordajad
+#0.0263 plasma
+#0.2973 VLDL
+#0.25
+#1 LDL
 
 #'r' preceding the string turns off the eight-character Unicode escape (for a raw string)
-workbook = xlrd.open_workbook(r"C:\Users\robik\Desktop\Mimetic.xls")
+workbook = xlrd.open_workbook(r"C:\Users\robik\Desktop\LDLNMR.xlsx")
 
 #Get worksheet by index
 worksheet = workbook.sheet_by_index(0)
 
 #Iterate over first two columns, starting from row 3 (skip titles)
+#NMRi jaoks vahetuses -> column 1 = x ja column 0 = y
+#worksheet.nrows
 for columnIndex in range (0, worksheet.ncols):
-    for rowIndex in range (3, worksheet.nrows):
+    for rowIndex in range (100266, 102123):
         if columnIndex == 0:
-            values_x.append(float(worksheet.cell(rowIndex,columnIndex).value))
-        if columnIndex == 1:
             values_y.append(float(worksheet.cell(rowIndex,columnIndex).value))
+        if columnIndex == 1:
+            values_x.append(float(worksheet.cell(rowIndex,columnIndex).value))
 
 #List of variables
 pW = [] #Initial guesses for peak width
+pM = [] #Initial guesses for peak mean
 
 def fitFormula(x,pars):
     height = pars[0]
@@ -61,13 +66,12 @@ showRawData = False
 if showRawData == True:
     plt.plot(values_x,values_y, label = "Raw data")
     plt.show()
-figTitle = input("Enter sample name: \n")
+#figTitle = input("Enter sample name: \n")
+fitTitle = "Test"
 fitMode = int(input("Choose distribution function: \n 1 - Gaussian \n 2 - Cauchy \n"))
 insertPeaksManually = input("Do you want to enter peaks manually? (y/n/5/6) \n")
-#Lõpuks teha nii, et saab hiirega vajutada graafikule ja valida punktid
 if insertPeaksManually == "y":
     peakNames = []
-    pM = [] #Initial guesses for peak mean
     nPeaks = int(input("Please enter # of peaks:\n"))
     aM = []
     indices = []
@@ -125,6 +129,22 @@ elif insertPeaksManually == "6":
         plt.plot(values_x[i],values_y[i],"x")
         plt.plot(values_x[i],values_y[i],"x")
     pW = [0.3,0.8,0.8,0.4,0.2,0.2]
+elif insertPeaksManually == "LDL":
+    #peakNames = ["LDL1","LDL2","LDL3","LDL4","LDL5"]
+    peakNames = ["LDL1","LDL2","LDL3"]
+    pM = [] #Initial guesses for peak mean
+    aM = []
+    nPeaks = 3
+    indices = [0.859,0.864,0.873]
+    for a in range(0,nPeaks):
+        for i in range(0, len(values_x)):
+            aM.append(np.abs(values_x[i]-indices[a]))
+        pM.append(np.argmin(aM))
+        aM.clear()
+    for i in pM:
+        plt.plot(values_x[i],values_y[i],"x")
+        plt.plot(values_x[i],values_y[i],"x")
+    pW = [0.1,0.1,0.1,0.1,0.1]
 plt.plot(values_x,values_y, label = "Raw data")
 plt.show()
 
@@ -161,7 +181,7 @@ if nPeaks > 0:
         #Unpack guess when sending to nGaussians using *
         gaussianTest.append(nGaussians(i,*guess))
     #Find fitting parameters
-    popt, pcov = curve_fit(nGaussians, values_x, values_y, p0=[*guess])
+    popt, pcov = curve_fit(nGaussians, values_x, values_y, p0=[*guess], maxfev = 100000)
     #Create list of fitting parameters
     for i in range (0,nPeaks*3,3):
         fit.append(popt[i:i+3])
@@ -186,7 +206,7 @@ for i in range (0,nPeaks):
 #Axis manipulation
 plt.xlabel("Volume (ml)")
 plt.ylabel("OD280")
-plt.suptitle(figTitle, fontsize=16)
+#plt.suptitle(figTitle, fontsize=16)
 ylim = plt.ylim()
 xlim = plt.xlim()
 areaTexts = "\n"
