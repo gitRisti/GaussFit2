@@ -267,9 +267,12 @@ plt.plot(values_x, nGaussians(values_x, *popt), label = "Final fit", linestyle =
 #Plot single fitted gaussians
 for i in range (0,nPeaks):
     plt.plot(values_x, gauss[i],label = peakNames[i])
+#Plot sum of VLDL,LDL and HDL
 #Axis manipulation
 plt.xlabel("Volume (ml)")
 plt.ylabel("OD280")
+#Invert x-axis for NMR
+plt.gca().invert_xaxis()
 #plt.suptitle(figTitle, fontsize=16)
 ylim = plt.ylim()
 xlim = plt.xlim()
@@ -284,6 +287,4 @@ areaTextBox = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
 #plt.text(xlim[0]+xlim[0]/10,ylim[1]-ylim[1]/10, areaTexts, fontsize=14,
  #       verticalalignment='top', bbox=areaTextBox)
 plt.legend()
-#Invert x-axis for NMR
-plt.gca().invert_xaxis()
 plt.show()
