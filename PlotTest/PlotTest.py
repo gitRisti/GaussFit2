@@ -31,7 +31,7 @@ fixedPeaks = False
 #1 LDL
 
 #'r' preceding the string turns off the eight-character Unicode escape (for a raw string)
-workbook = xlrd.open_workbook(r"C:\Users\robik\Desktop\LDLNMR.xlsx")
+workbook = xlrd.open_workbook(r"C:\Users\robik\Desktop\HDLNMR.xlsx")
 
 #Get worksheet by index
 worksheet = workbook.sheet_by_index(0)
@@ -49,6 +49,7 @@ for columnIndex in range (0, worksheet.ncols):
 #List of variables
 pW = [] #Initial guesses for peak width
 pM = [] #Initial guesses for peak mean
+pH = [] #Intial guesses for peak height
 
 def fitFormula(x,pars):
     height = pars[0]
@@ -61,8 +62,15 @@ def fitFormula(x,pars):
     if fitMode == 2:
         return height*((width**2)/(((x-center)**2)+width**2))
 
+#Substract baseline and normalization (Normalization is necessary because data will not fit when using values that are too large or too small)
+baseline = np.average(values_y[(len(values_y)-50):len(values_y)])
+maxValue = np.amax(values_y)
+for i in range (0,len(values_y)):
+    values_y[i] -= baseline
+    values_y[i] = values_y[i]/maxValue
 #Show raw data
-showRawData = False
+showRawData = True
+showMarkedPeaks = True
 if showRawData == True:
     plt.plot(values_x,values_y, label = "Raw data")
     plt.show()
@@ -100,7 +108,6 @@ elif insertPeaksManually == "n":
     print("Found " + str(nPeaks) + " peaks")
 elif insertPeaksManually == "5":
     peakNames = ["VLDL","LDL","REM","HDL","HSA"]
-    pM = [] #Initial guesses for peak mean
     aM = []
     nPeaks = 5
     indices = [7.52,11.3,12.6,15.8,16.8]
@@ -116,7 +123,6 @@ elif insertPeaksManually == "5":
     pW = [0.3,0.8,0.8,0.5,0.3]
 elif insertPeaksManually == "6":
     peakNames = ["VLDL","LDL","REM","HDL","HSA","PROD"]
-    pM = [] #Initial guesses for peak mean
     aM = []
     nPeaks = 6
     indices = [7.45,11.4,14.2,15.65,16.29,17]
@@ -130,23 +136,81 @@ elif insertPeaksManually == "6":
         plt.plot(values_x[i],values_y[i],"x")
     pW = [0.3,0.8,0.8,0.4,0.2,0.2]
 elif insertPeaksManually == "LDL":
-    #peakNames = ["LDL1","LDL2","LDL3","LDL4","LDL5"]
-    peakNames = ["LDL1","LDL2","LDL3"]
-    pM = [] #Initial guesses for peak mean
+    peakNames = ["LDL1","LDL2","LDL3","LDL4","LDL5","PROTEIN"]
     aM = []
-    nPeaks = 3
-    indices = [0.859,0.864,0.873]
+    nPeaks = 6
+    indices = [0.8522,0.8595,0.8673,0.8744,0.8800,0.9302]
     for a in range(0,nPeaks):
         for i in range(0, len(values_x)):
             aM.append(np.abs(values_x[i]-indices[a]))
         pM.append(np.argmin(aM))
         aM.clear()
-    for i in pM:
-        plt.plot(values_x[i],values_y[i],"x")
-        plt.plot(values_x[i],values_y[i],"x")
-    pW = [0.1,0.1,0.1,0.1,0.1]
-plt.plot(values_x,values_y, label = "Raw data")
-plt.show()
+    if showMarkedPeaks == True:
+        for i in pM:
+            plt.plot(values_x[i],values_y[i],"x")
+            plt.plot(values_x[i],values_y[i],"x")
+    pW = [0.007,0.006,0.006,0.009,0.004,0.03]
+    pH = [0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4]
+
+elif insertPeaksManually == "VLDL":
+    peakNames = ["VLDL1","VLDL2","VLDL3","VLDL4","VLDL5","PROTEIN"]
+    aM = []
+    nPeaks = 6
+    indices = [0.8749,0.8799,0.8861,0.8899,0.8962,0.9464]
+    for a in range(0,nPeaks):
+        for i in range(0, len(values_x)):
+            aM.append(np.abs(values_x[i]-indices[a]))
+        pM.append(np.argmin(aM))
+        aM.clear()
+    if showMarkedPeaks == True:
+        for i in pM:
+            plt.plot(values_x[i],values_y[i],"x")
+            plt.plot(values_x[i],values_y[i],"x")
+    pW = [0.005,0.005,0.005,0.005,0.005,0.005]
+
+    pH = [0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4]
+elif insertPeaksManually == "PLASMA":
+    peakNames = ["HDL1","HDL2","HDL3","HDL4","HDL5","HDL6","HDL7",
+                 "LDL1","LDL2","LDL3","LDL4","LDL5",
+                 "VLDL1","VLDL2","VLDL3","VLDL4","VLDL5",
+                 "PROTEIN"]
+    aM = []
+    nPeaks = 18
+    indices = [0.835,0.840,0.845,0.850,0.855,0.860,0.865, #HDL
+               0.8522,0.8595,0.8673,0.8744,0.8800, #LDL
+               0.8749,0.8799,0.8861,0.8899,0.8962, #VLDL
+               0.9464] #PROTEIN
+    for a in range(0,nPeaks):
+        for i in range(0, len(values_x)):
+            aM.append(np.abs(values_x[i]-indices[a]))
+        pM.append(np.argmin(aM))
+        aM.clear()
+    if showMarkedPeaks == True:
+        for i in pM:
+            plt.plot(values_x[i],values_y[i],"x")
+            plt.plot(values_x[i],values_y[i],"x")
+    pW = [0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005]
+    pH = [0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4]
+elif insertPeaksManually == "HDL":
+    peakNames = ["HDL1","HDL2","HDL3","HDL4","HDL5","HDL6","HDL7","PROTEIN"]
+    aM = []
+    nPeaks = 8
+    indices = [0.835,0.840,0.845,0.850,0.855,0.860,0.865,0.909]
+    for a in range(0,nPeaks):
+        for i in range(0, len(values_x)):
+            aM.append(np.abs(values_x[i]-indices[a]))
+        pM.append(np.argmin(aM))
+        aM.clear()
+    if showMarkedPeaks == True:
+        for i in pM:
+            plt.plot(values_x[i],values_y[i],"x")
+            plt.plot(values_x[i],values_y[i],"x")
+    pW = [0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005]
+    pH = [0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4]
+
+if showMarkedPeaks == True:
+    plt.plot(values_x,values_y, label = "Raw data")
+    plt.show()
 
 if insertPeaksManually == "y" or insertPeaksManually == "n":
     for i in range(1,nPeaks+1):
@@ -173,15 +237,15 @@ if nPeaks > 0:
     if fixedPeaks == False:
         for i in range(0,nPeaks):
         #extend - for sequences, append - single elements
-            guess.extend((values_y[pM[i]],values_x[pM[i]],pW[i]))
+            guess.extend((values_y[pM[i]]*pH[i],values_x[pM[i]],pW[i]))
     elif fixedPeaks == True:
         for i in range(0,nPeaks):
             guess.extend((values_y[pM[i]],values_x[fixedPM[i]],pW[i]))
     for i in values_x:
         #Unpack guess when sending to nGaussians using *
         gaussianTest.append(nGaussians(i,*guess))
-    #Find fitting parameters
-    popt, pcov = curve_fit(nGaussians, values_x, values_y, p0=[*guess], maxfev = 100000)
+    #Find fitting parameters, non-negative bounds =(0,infinity)
+    popt, pcov = curve_fit(nGaussians, values_x, values_y, p0=[*guess], maxfev = 100000, bounds=(0,np.inf))
     #Create list of fitting parameters
     for i in range (0,nPeaks*3,3):
         fit.append(popt[i:i+3])
@@ -193,13 +257,13 @@ if nPeaks > 0:
         totalArea += areas[i]
     for i in range(0,nPeaks):
         percentAreas.append((areas[i]/totalArea)*100)
-
 #Draw raw data and final fit
 plt.plot(values_x,values_y, label = "Raw data")
 plt.plot(values_x,gaussianTest,label="Initial fit")
+plt.gca().invert_xaxis()
 plt.show()
 plt.plot(values_x,values_y, label = "Raw data")
-plt.plot(values_x, nGaussians(values_x, *popt), label = "Final fit")
+plt.plot(values_x, nGaussians(values_x, *popt), label = "Final fit", linestyle = "--")
 #Plot single fitted gaussians
 for i in range (0,nPeaks):
     plt.plot(values_x, gauss[i],label = peakNames[i])
@@ -217,7 +281,9 @@ for i in range (0,nPeaks):
 #Create a textbox
 areaTextBox = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
 #Insert text to textbox
-plt.text(xlim[0]+xlim[0]/10,ylim[1]-ylim[1]/10, areaTexts, fontsize=14,
-        verticalalignment='top', bbox=areaTextBox)
+#plt.text(xlim[0]+xlim[0]/10,ylim[1]-ylim[1]/10, areaTexts, fontsize=14,
+ #       verticalalignment='top', bbox=areaTextBox)
 plt.legend()
+#Invert x-axis for NMR
+plt.gca().invert_xaxis()
 plt.show()
