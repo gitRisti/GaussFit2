@@ -17,7 +17,7 @@ gaussian_x = []
 gaussian_y = []
 #Default distribution fitMode = 1 is Gaussian
 fitMode = 1
-fixedPeaks = False
+fixedPeaks = True
 #Plasma data:
 #VLDL   7.52 0.3 
 #LDL    11.3 0.8
@@ -31,7 +31,7 @@ fixedPeaks = False
 #1 LDL
 
 #'r' preceding the string turns off the eight-character Unicode escape (for a raw string)
-workbook = xlrd.open_workbook(r"C:\Users\robik\Desktop\HDLNMR.xlsx")
+workbook = xlrd.open_workbook(r"C:\Users\robik\Desktop\PLASMANMR.xlsx")
 
 #Get worksheet by index
 worksheet = workbook.sheet_by_index(0)
@@ -51,7 +51,7 @@ pW = [] #Initial guesses for peak width
 pM = [] #Initial guesses for peak mean
 pH = [] #Intial guesses for peak height
 
-def fitFormula(x,pars):
+def fitFormula(x,pars): 
     height = pars[0]
     center = pars[1]
     width = pars[2]
@@ -63,10 +63,10 @@ def fitFormula(x,pars):
         return height*((width**2)/(((x-center)**2)+width**2))
 
 #Substract baseline and normalization (Normalization is necessary because data will not fit when using values that are too large or too small)
-baseline = np.average(values_y[(len(values_y)-50):len(values_y)])
+#baseline = np.average(values_y[(len(values_y)-50):len(values_y)])
 maxValue = np.amax(values_y)
 for i in range (0,len(values_y)):
-    values_y[i] -= baseline
+    #values_y[i] -= baseline
     values_y[i] = values_y[i]/maxValue
 #Show raw data
 showRawData = True
@@ -139,7 +139,7 @@ elif insertPeaksManually == "LDL":
     peakNames = ["LDL1","LDL2","LDL3","LDL4","LDL5","PROTEIN"]
     aM = []
     nPeaks = 6
-    indices = [0.8522,0.8595,0.8673,0.8744,0.8800,0.9302]
+    indices = [0.8522,0.8595,0.8673,0.8744,0.8800,0.956]
     for a in range(0,nPeaks):
         for i in range(0, len(values_x)):
             aM.append(np.abs(values_x[i]-indices[a]))
@@ -149,8 +149,8 @@ elif insertPeaksManually == "LDL":
         for i in pM:
             plt.plot(values_x[i],values_y[i],"x")
             plt.plot(values_x[i],values_y[i],"x")
-    pW = [0.007,0.006,0.006,0.009,0.004,0.03]
-    pH = [0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4]
+    pW = [0.007,0.006,0.006,0.009,0.004,0.01]
+    pH = [0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.3]
 
 elif insertPeaksManually == "VLDL":
     peakNames = ["VLDL1","VLDL2","VLDL3","VLDL4","VLDL5","PROTEIN"]
@@ -170,16 +170,18 @@ elif insertPeaksManually == "VLDL":
 
     pH = [0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4]
 elif insertPeaksManually == "PLASMA":
-    peakNames = ["HDL1","HDL2","HDL3","HDL4","HDL5","HDL6","HDL7",
-                 "LDL1","LDL2","LDL3","LDL4","LDL5",
-                 "VLDL1","VLDL2","VLDL3","VLDL4","VLDL5",
-                 "PROTEIN"]
+    namesHDL = ["HDL1","HDL2","HDL3","HDL4","HDL5","HDL6","HDL7"]
+    namesLDL = ["LDL1","LDL2","LDL3","LDL4","LDL5"]
+    namesVLDL = ["VLDL1", "VLDL2" , "VLDL3", "VLDL4", "VLDL5"]
+    peakNames = [*namesHDL,*namesLDL,*namesVLDL]
+    peakNames.append("PROTEIN")
     aM = []
-    nPeaks = 18
-    indices = [0.835,0.840,0.845,0.850,0.855,0.860,0.865, #HDL
-               0.8522,0.8595,0.8673,0.8744,0.8800, #LDL
-               0.8749,0.8799,0.8861,0.8899,0.8962, #VLDL
-               0.9464] #PROTEIN
+    nPeaks = len(peakNames)
+    meanHDL = [0.835,0.840,0.845,0.850,0.855,0.860,0.865]
+    meanLDL = [0.8522,0.8595,0.8673,0.8744,0.8800]
+    meanVLDL = [0.8749,0.8799,0.8861,0.8899,0.8962]
+    meanPROTEIN = [0.9564]
+    indices = [*meanHDL,*meanLDL,*meanVLDL, *meanPROTEIN]
     for a in range(0,nPeaks):
         for i in range(0, len(values_x)):
             aM.append(np.abs(values_x[i]-indices[a]))
@@ -189,8 +191,16 @@ elif insertPeaksManually == "PLASMA":
         for i in pM:
             plt.plot(values_x[i],values_y[i],"x")
             plt.plot(values_x[i],values_y[i],"x")
-    pW = [0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005]
-    pH = [0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4]
+    widthHDL = [0.005,0.005,0.005,0.005,0.005,0.005,0.005]
+    widthLDL = [0.005,0.005,0.005,0.005,0.005]
+    widthVLDL = [0.005,0.005,0.005,0.005,0.005]
+    widthPROTEIN = [0.01]
+    pW = [*widthHDL,*widthLDL,*widthVLDL,*widthPROTEIN]
+    heightHDL = [0.4,0.4,0.4,0.4,0.4,0.4,0.4]
+    heightLDL = [0.4,0.4,0.4,0.4,0.4]
+    heightVLDL = [0.4,0.4,0.4,0.4,0.4]
+    heightPROTEIN = [0.4]
+    pH = [*heightHDL,*heightLDL,*heightVLDL,*heightPROTEIN]
 elif insertPeaksManually == "HDL":
     peakNames = ["HDL1","HDL2","HDL3","HDL4","HDL5","HDL6","HDL7","PROTEIN"]
     aM = []
@@ -225,6 +235,13 @@ def nGaussians(x,*params):
         gaussianSum += fitFormula(x,[params[i],params[i+1],params[i+2]])
     return gaussianSum
 
+def fixedPeaksCalculation(x,*params):
+    sum = 0
+    for i in range (0,nPeaks*2,2):
+        peak = int(i/2)
+        sum += fitFormula (x,[params[i],indices[peak],params[i+1]])
+    return sum
+
 gaussianTest = []
 fit = []
 gauss = []
@@ -236,34 +253,60 @@ if nPeaks > 0:
     #Create list of initial parameters
     if fixedPeaks == False:
         for i in range(0,nPeaks):
-        #extend - for sequences, append - single elements
+            #extend - for sequences, append - single elements
             guess.extend((values_y[pM[i]]*pH[i],values_x[pM[i]],pW[i]))
+        for i in values_x:
+            #Unpack guess when sending to nGaussians using *
+            gaussianTest.append(nGaussians(i,*guess))
+
     elif fixedPeaks == True:
         for i in range(0,nPeaks):
-            guess.extend((values_y[pM[i]],values_x[fixedPM[i]],pW[i]))
-    for i in values_x:
-        #Unpack guess when sending to nGaussians using *
-        gaussianTest.append(nGaussians(i,*guess))
+            #Create guess with only two variables
+            guess.extend((values_y[pM[i]]*pH[i],pW[i]))
+        for i in values_x:
+            #Unpack guess when sending to nGaussians using *
+            gaussianTest.append(fixedPeaksCalculation(i,*guess))
+
     #Find fitting parameters, non-negative bounds =(0,infinity)
-    popt, pcov = curve_fit(nGaussians, values_x, values_y, p0=[*guess], maxfev = 100000, bounds=(0,np.inf))
-    #Create list of fitting parameters
-    for i in range (0,nPeaks*3,3):
-        fit.append(popt[i:i+3])
-    print(popt)
-    #Create lists of fitted gaussians and integrated areas
-    for i in range(0,nPeaks):
-        gauss.append(fitFormula(values_x,fit[i]))
-        areas.append(np.trapz(gauss[i],values_x))
-        totalArea += areas[i]
-    for i in range(0,nPeaks):
-        percentAreas.append((areas[i]/totalArea)*100)
+    if fixedPeaks == False:
+        popt, pcov = curve_fit(nGaussians, values_x, values_y, p0=[*guess], maxfev = 100000, bounds=(0,np.inf))
+            #Create list of fitting parameters
+        for i in range (0,nPeaks*3,3):
+            fit.append(popt[i:i+3])
+        print(popt)
+        for i in range(0,nPeaks):
+            gauss.append(fitFormula(values_x, fit[i]))
+            areas.append(np.trapz(gauss[i],values_x))
+            totalArea += areas[i]
+        for i in range(0,nPeaks):
+            percentAreas.append((areas[i]/totalArea)*100)
+    elif fixedPeaks == True:
+         popt, pcov = curve_fit(fixedPeaksCalculation, values_x, values_y, p0=[*guess], maxfev = 100000, bounds=(0,np.inf))
+         for i in range (0,nPeaks*2,2):
+             peak = int(i/2)
+             fit.append(popt[i:i+2])
+             fit[peak] = np.insert(fit[peak],1,indices[peak])
+         for i in range(0,nPeaks):
+            gauss.append(fitFormula(values_x, fit[i]))
+            areas.append(np.trapz(gauss[i],values_x))
+            totalArea += areas[i]
+         for i in range(0,nPeaks):
+            percentAreas.append((areas[i]/totalArea)*100)
+
 #Draw raw data and final fit
 plt.plot(values_x,values_y, label = "Raw data")
 plt.plot(values_x,gaussianTest,label="Initial fit")
 plt.gca().invert_xaxis()
 plt.show()
-plt.plot(values_x,values_y, label = "Raw data")
-plt.plot(values_x, nGaussians(values_x, *popt), label = "Final fit", linestyle = "--")
+if fixedPeaks == True:
+    plt.plot(values_x,values_y, label = "Raw data")
+    final_y = []
+    for i in values_x:
+        final_y.append(fixedPeaksCalculation(i,*popt))
+    plt.plot(values_x, final_y, label = "Final fit", linestyle = "--")
+elif fixedPeaks == False:
+    plt.plot(values_x,values_y, label = "Raw data")
+    plt.plot(values_x, nGaussians(values_x, *popt), label = "Final fit", linestyle = "--")
 #Plot single fitted gaussians
 for i in range (0,nPeaks):
     plt.plot(values_x, gauss[i],label = peakNames[i])
