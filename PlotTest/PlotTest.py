@@ -176,11 +176,16 @@ elif insertPeaksManually == "PLASMA":
     peakNames = [*namesHDL,*namesLDL,*namesVLDL]
     peakNames.append("PROTEIN")
     aM = []
-    nPeaks = len(peakNames)
-    meanHDL = [0.835,0.840,0.845,0.850,0.855,0.860,0.865]
+    #Data derived from individually fitted peaks
+    meanHDL = [0.8283,0.8339,0.8385,0.8431,0.8481,0.8539,0.8617]
     meanLDL = [0.8522,0.8595,0.8673,0.8744,0.8800]
     meanVLDL = [0.8749,0.8799,0.8861,0.8899,0.8962]
     meanPROTEIN = [0.9564]
+    nHDL = len(meanHDL)
+    nLDL = len(meanLDL)
+    nVLDL = len(meanVLDL)
+    nPROTEIN = len(meanPROTEIN)
+    nPeaks = (nHDL+nLDL+nVLDL+nPROTEIN)
     indices = [*meanHDL,*meanLDL,*meanVLDL, *meanPROTEIN]
     for a in range(0,nPeaks):
         for i in range(0, len(values_x)):
@@ -191,15 +196,15 @@ elif insertPeaksManually == "PLASMA":
         for i in pM:
             plt.plot(values_x[i],values_y[i],"x")
             plt.plot(values_x[i],values_y[i],"x")
-    widthHDL = [0.005,0.005,0.005,0.005,0.005,0.005,0.005]
-    widthLDL = [0.005,0.005,0.005,0.005,0.005]
-    widthVLDL = [0.005,0.005,0.005,0.005,0.005]
-    widthPROTEIN = [0.01]
+    widthHDL = [0.00419,0.004017,0.004046,0.004384,0.005870,0.004955,0.007102]
+    widthLDL = [0.00668,0.00582,0.00454,0.00575,0.00854]
+    widthVLDL = [0.00741,0.00448,0.00376,0.003556,0.00329]
+    widthPROTEIN = [0.05]
     pW = [*widthHDL,*widthLDL,*widthVLDL,*widthPROTEIN]
     heightHDL = [0.4,0.4,0.4,0.4,0.4,0.4,0.4]
     heightLDL = [0.4,0.4,0.4,0.4,0.4]
-    heightVLDL = [0.4,0.4,0.4,0.4,0.4]
-    heightPROTEIN = [0.4]
+    heightVLDL = [0,4,0.4,0.4,0.4,0.4]
+    heightPROTEIN = [0.6]
     pH = [*heightHDL,*heightLDL,*heightVLDL,*heightPROTEIN]
 elif insertPeaksManually == "HDL":
     peakNames = ["HDL1","HDL2","HDL3","HDL4","HDL5","HDL6","HDL7","PROTEIN"]
@@ -281,18 +286,36 @@ if nPeaks > 0:
         for i in range(0,nPeaks):
             percentAreas.append((areas[i]/totalArea)*100)
     elif fixedPeaks == True:
-         popt, pcov = curve_fit(fixedPeaksCalculation, values_x, values_y, p0=[*guess], maxfev = 100000, bounds=(0,np.inf))
-         for i in range (0,nPeaks*2,2):
+        popt, pcov = curve_fit(fixedPeaksCalculation, values_x, values_y, p0=[*guess], maxfev = 100000, bounds=(0,np.inf))
+        for i in range (0,nPeaks*2,2):
              peak = int(i/2)
              fit.append(popt[i:i+2])
              fit[peak] = np.insert(fit[peak],1,indices[peak])
-         for i in range(0,nPeaks):
+        for i in range(0,nPeaks):
             gauss.append(fitFormula(values_x, fit[i]))
             areas.append(np.trapz(gauss[i],values_x))
             totalArea += areas[i]
-         for i in range(0,nPeaks):
+        for i in range(0,nPeaks):
             percentAreas.append((areas[i]/totalArea)*100)
-
+        sumHDL = gauss[nHDL-1]
+        sumLDL = gauss[nHDL+nLDL-1]
+        sumVLDL = gauss[nHDL+nLDL+nVLDL-1]
+        for i in range (0, nHDL-1):
+            for y in range (0,len(gauss[i])):
+                sumHDL[y] += gauss[i][y]
+        for i in range (nHDL, nHDL+nLDL-1):
+            for y in range (0,len(gauss[i])):
+                sumLDL[y] += gauss[i][y]
+        for i in range (nHDL+nLDL, nHDL+nLDL+nVLDL-1):
+            for y in range (0,len(gauss[i])):
+                sumVLDL[y] += gauss[i][y]
+        areaHDL = np.trapz(sumHDL,values_x)
+        areaLDL = np.trapz(sumLDL,values_x)
+        areaVLDL = np.trapz(sumVLDL,values_x)
+        totalCombinedArea = areaHDL + areaLDL + areaVLDL
+        percentAreaHDL = (areaHDL / totalCombinedArea)*100
+        percentAreaLDL = (areaLDL / totalCombinedArea)*100
+        percentAreaVLDL = (areaVLDL / totalCombinedArea)*100
 #Draw raw data and final fit
 plt.plot(values_x,values_y, label = "Raw data")
 plt.plot(values_x,gaussianTest,label="Initial fit")
@@ -307,27 +330,28 @@ if fixedPeaks == True:
 elif fixedPeaks == False:
     plt.plot(values_x,values_y, label = "Raw data")
     plt.plot(values_x, nGaussians(values_x, *popt), label = "Final fit", linestyle = "--")
-#Plot single fitted gaussians
-for i in range (0,nPeaks):
-    plt.plot(values_x, gauss[i],label = peakNames[i])
+#Plot single fitted gaussians (nPeaks-1 = skip protein curve)
+for i in range (0,nPeaks-1):
+    plt.plot(values_x, gauss[i],label = peakNames[i], alpha=0.25)
 #Plot sum of VLDL,LDL and HDL
+if fixedPeaks == True:
+    ylim = plt.ylim()
+    xlim = plt.xlim()
+    plt.plot(values_x,sumHDL,label="HDL")
+    plt.plot(values_x,sumLDL,label="LDL")
+    plt.plot(values_x,sumVLDL,label="VLDL+CM")
+    plt.plot(values_x,gauss[nPeaks-1],label="PROTEIN")
+    #Generate area text
+    areaTexts = str("HDL (%): " + str(round(percentAreaHDL,2)) + "\nLDL (%): " + str(round(percentAreaLDL,2))+ "\nVLDL+CM (%): " + str(round(percentAreaVLDL,2)))
+    #Create a textbox
+    areaTextBox = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+    #Insert text to textbox
+    plt.text(0.96,0.95, areaTexts, fontsize=14,verticalalignment='top', bbox=areaTextBox)
 #Axis manipulation
 plt.xlabel("Volume (ml)")
 plt.ylabel("OD280")
 #Invert x-axis for NMR
 plt.gca().invert_xaxis()
 #plt.suptitle(figTitle, fontsize=16)
-ylim = plt.ylim()
-xlim = plt.xlim()
-areaTexts = "\n"
-#Generate area text
-for i in range (0,nPeaks):
-    areaString = str(peakNames[i] + " area: " + str(round(areas[i],2)) + " ("+str(round(percentAreas[i],2)) + " %)\n")
-    areaTexts += areaString
-#Create a textbox
-areaTextBox = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-#Insert text to textbox
-#plt.text(xlim[0]+xlim[0]/10,ylim[1]-ylim[1]/10, areaTexts, fontsize=14,
- #       verticalalignment='top', bbox=areaTextBox)
 plt.legend()
 plt.show()
