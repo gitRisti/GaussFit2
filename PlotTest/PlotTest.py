@@ -17,7 +17,7 @@ gaussian_x = []
 gaussian_y = []
 #Default distribution fitMode = 1 is Gaussian
 fitMode = 1
-fixedPeaks = True
+fixedPeaks = False
 #Plasma data:
 #VLDL   7.52 0.3 
 #LDL    11.3 0.8
@@ -31,7 +31,7 @@ fixedPeaks = True
 #1 LDL
 
 #'r' preceding the string turns off the eight-character Unicode escape (for a raw string)
-workbook = xlrd.open_workbook(r"C:\Users\robik\Desktop\PLASMANMR.xlsx")
+workbook = xlrd.open_workbook(r"C:\Users\robik\Desktop\Algne.xls")
 
 #Get worksheet by index
 worksheet = workbook.sheet_by_index(0)
@@ -39,12 +39,20 @@ worksheet = workbook.sheet_by_index(0)
 #Iterate over first two columns, starting from row 3 (skip titles)
 #NMRi jaoks vahetuses -> column 1 = x ja column 0 = y
 #worksheet.nrows
-for columnIndex in range (0, worksheet.ncols):
-    for rowIndex in range (100266, 102123):
-        if columnIndex == 0:
-            values_y.append(float(worksheet.cell(rowIndex,columnIndex).value))
-        if columnIndex == 1:
-            values_x.append(float(worksheet.cell(rowIndex,columnIndex).value))
+if fitMode == 2:
+    for columnIndex in range (0, worksheet.ncols):
+        for rowIndex in range (100266, 102123):
+            if columnIndex == 0:
+                values_y.append(float(worksheet.cell(rowIndex,columnIndex).value))
+            if columnIndex == 1:
+                values_x.append(float(worksheet.cell(rowIndex,columnIndex).value))
+elif fitMode == 1:
+    for columnIndex in range (0, worksheet.ncols):
+        for rowIndex in range (3, 800):
+            if columnIndex == 0:
+                values_x.append(float(worksheet.cell(rowIndex,columnIndex).value))
+            if columnIndex == 1:
+                values_y.append(float(worksheet.cell(rowIndex,columnIndex).value))
 
 #List of variables
 pW = [] #Initial guesses for peak width
@@ -135,6 +143,7 @@ elif insertPeaksManually == "6":
         plt.plot(values_x[i],values_y[i],"x")
         plt.plot(values_x[i],values_y[i],"x")
     pW = [0.3,0.8,0.8,0.4,0.2,0.2]
+    pH = [0.4,0.4,0.4,0.7,0.7,0.4]
 elif insertPeaksManually == "LDL":
     peakNames = ["LDL1","LDL2","LDL3","LDL4","LDL5","PROTEIN"]
     aM = []
@@ -319,7 +328,8 @@ if nPeaks > 0:
 #Draw raw data and final fit
 plt.plot(values_x,values_y, label = "Raw data")
 plt.plot(values_x,gaussianTest,label="Initial fit")
-plt.gca().invert_xaxis()
+if fitMode == 2:
+    plt.gca().invert_xaxis()
 plt.show()
 if fixedPeaks == True:
     plt.plot(values_x,values_y, label = "Raw data")
@@ -344,14 +354,15 @@ if fixedPeaks == True:
     #Generate area text
     areaTexts = str("HDL (%): " + str(round(percentAreaHDL,2)) + "\nLDL (%): " + str(round(percentAreaLDL,2))+ "\nVLDL+CM (%): " + str(round(percentAreaVLDL,2)))
     #Create a textbox
-    areaTextBox = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+    areaTextBox = dict(boxstyle='round', facecolor='wheat', alpha=0.6)
     #Insert text to textbox
     plt.text(0.96,0.95, areaTexts, fontsize=14,verticalalignment='top', bbox=areaTextBox)
 #Axis manipulation
 plt.xlabel("Volume (ml)")
 plt.ylabel("OD280")
-#Invert x-axis for NMR
-plt.gca().invert_xaxis()
+if fitMode == 2:
+    #Invert x-axis for NMR
+    plt.gca().invert_xaxis()
 #plt.suptitle(figTitle, fontsize=16)
 plt.legend()
 plt.show()
