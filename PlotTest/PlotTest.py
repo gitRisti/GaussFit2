@@ -10,6 +10,7 @@ from scipy.special import erf
 from scipy.optimize import curve_fit
 import matplotlib.mlab as mlab
 import math
+import copy
 
 values_x = []
 values_y = []
@@ -18,9 +19,11 @@ gaussian_y = []
 #Default distribution fitMode = 1 is Gaussian
 fitMode = 2
 fixedPeaks = True
+#Shift ppm for better fit
+chemShift = 0.016
 
 #'r' preceding the string turns off the eight-character Unicode escape (for a raw string)
-workbook = xlrd.open_workbook(r"C:\Users\robik\Desktop\FASTEDNMR.xlsx")
+workbook = xlrd.open_workbook(r"C:\Users\robik\Desktop\FASTEDLPL.xlsx")
 
 #Get worksheet by index
 worksheet = workbook.sheet_by_index(0)
@@ -134,10 +137,11 @@ elif insertPeaksManually == "6":
     pW = [0.3,0.8,0.8,0.4,0.2,0.2]
     pH = [0.4,0.4,0.4,0.7,0.7,0.4]
 elif insertPeaksManually == "LDL":
-    peakNames = ["LDL1","LDL2","LDL3","LDL4","LDL5","PROTEIN"]
+    peakNames = ["LDL1","LDL2","LDL3","LDL4","LDL5","LDL6","LDL7","PROTEIN"]
     aM = []
-    nPeaks = 6
-    indices = [0.84804,0.85344,0.86598,0.85979,0.87375,0.95640]
+    nPeaks = 8
+    indices = [0.8454868,0.85046652,0.85448537,0.86676283,0.85954238,0.88240966,0.87473024,0.95640]
+    meanPROTEIN = [0.95640]
     for a in range(0,nPeaks):
         for i in range(0, len(values_x)):
             aM.append(np.abs(values_x[i]-indices[a]))
@@ -147,14 +151,16 @@ elif insertPeaksManually == "LDL":
         for i in pM:
             plt.plot(values_x[i],values_y[i],"x")
             plt.plot(values_x[i],values_y[i],"x")
-    pW = [0.00668,0.00582,0.00455,0.00576,0.00855,0.14676]
-    pH = [0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.154]
+    pW = [0.00644499,0.00458794,0.00441878,0.00740763,0.00537808,0.00500155,0.00449342,0.14676]
+    pH = [0.3,0.3,0.3,0.3,0.3,0.3,0.3,0.3,0.3,0.154]
+    widthPROTEIN = [0.14676]
 
 elif insertPeaksManually == "VLDL":
-    peakNames = ["VLDL1","VLDL2","VLDL3","VLDL4","VLDL5","PROTEIN"]
+    peakNames = ["VLDL1","VLDL2","VLDL3","VLDL4","VLDL5","VLDL6","VLDL7","PROTEIN"]
     aM = []
-    nPeaks = 6
-    indices = [0.87891,0.88624,0.88967,0.89441,0.89760,0.9464]
+    nPeaks = 8
+    indices = [0.87900098,0.88583026,0.8888809,0.89199671,0.89528075,0.89818989,0.90332644,0.9464]
+    meanPROTEIN =[0.9464]
     for a in range(0,nPeaks):
         for i in range(0, len(values_x)):
             aM.append(np.abs(values_x[i]-indices[a]))
@@ -164,19 +170,20 @@ elif insertPeaksManually == "VLDL":
         for i in pM:
             plt.plot(values_x[i],values_y[i],"x")
             plt.plot(values_x[i],values_y[i],"x")
-    pW = [0.00742,0.00448,0.00376,0.00329,0.00356,0.009]
-    pH = [0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.2]
+    pW = [0.00751988,0.00422151,0.00324447,0.00293996,0.00273448,0.00284239,0.00228012,0.009]
+    pH = [0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.2]
+    widthPROTEIN =[0.009]
 elif insertPeaksManually == "PLASMA":
-    namesHDL = ["HDL1","HDL2","HDL3"]
-    namesLDL = ["LDL1","LDL2","LDL3","LDL4","LDL5"]
-    namesVLDL = ["VLDL1", "VLDL2" , "VLDL3", "VLDL4", "VLDL5"]
+    namesHDL = ["HDL1","HDL2","HDL3","HDL4","HDL5","HDL6","HDL7"]
+    namesLDL = ["LDL1","LDL2","LDL3","LDL4","LDL5","LDL6","LDL7"]
+    namesVLDL = ["VLDL1", "VLDL2" , "VLDL3", "VLDL4", "VLDL5","VLDL6","VLDL7"]
     peakNames = [*namesHDL,*namesLDL,*namesVLDL]
     peakNames.append("PROTEIN")
     aM = []
     #Data derived from individually fitted LP-fractions
-    meanHDL = [0.83760,0.84664,0.85739]
-    meanLDL = [0.84804,0.85344,0.86598,0.85979,0.87375]
-    meanVLDL = [0.87891,0.88624,0.88967,0.89441,0.89760]
+    meanHDL = [0.82834298,0.83392093,0.84316387,0.85391685,0.848127,0.83858213,0.86173502]
+    meanLDL = [0.8454868,0.85046652,0.85448537,0.86676283,0.85954238,0.88240966,0.87473024]
+    meanVLDL = [0.87900098,0.88583026,0.8888809,0.89199671,0.89528075,0.89818989,0.90332644]
     meanPROTEIN = [0.9564]
     nHDL = len(meanHDL)
     nLDL = len(meanLDL)
@@ -184,9 +191,8 @@ elif insertPeaksManually == "PLASMA":
     nPROTEIN = len(meanPROTEIN)
     nPeaks = (nHDL+nLDL+nVLDL+nPROTEIN)
     indices = [*meanHDL,*meanLDL,*meanVLDL, *meanPROTEIN]
-    #Shift ppm for better fit
     for x in range (0, len(indices)):
-        indices[x] -= 0.02
+        indices[x] -= chemShift
     for a in range(0,nPeaks):
         for i in range(0, len(values_x)):
             aM.append(np.abs(values_x[i]-indices[a]))
@@ -196,21 +202,22 @@ elif insertPeaksManually == "PLASMA":
         for i in pM:
             plt.plot(values_x[i],values_y[i],"x")
             plt.plot(values_x[i],values_y[i],"x")
-    widthHDL = [0.00709,0.00776,0.00936]
-    widthLDL = [0.00668,0.00582,0.00455,0.00576,0.00855]
-    widthVLDL = [0.00742,0.00448,0.00376,0.00329,0.00356]
+    widthHDL = [0.00418966,0.00401647,0.00438304,0.00587371,0.00495607,0.00406461,0.00710216]
+    widthLDL = [0.00644499,0.00458794,0.00441878,0.00740763,0.00537808,0.00500155,0.00449342]
+    widthVLDL = [0.00751988,0.00422151,0.00324447,0.00293996,0.00273448,0.00284239,0.00228012]
     widthPROTEIN = [0.2]
     pW = [*widthHDL,*widthLDL,*widthVLDL,*widthPROTEIN]
-    heightHDL = [0.2,0.2,0.2]
-    heightLDL = [0.2,0.2,0.2,0.2,0.2]
-    heightVLDL = [0.2,0.2,0.2,0.2,0.2]
+    heightHDL = [0.2,0.2,0.2,0.2,0.2,0.2,0.2]
+    heightLDL = [0.2,0.2,0.2,0.2,0.2,0.2,0.2]
+    heightVLDL = [0.2,0.2,0.2,0.2,0.2,0.2,0.2]
     heightPROTEIN = [0.5]
     pH = [*heightHDL,*heightLDL,*heightVLDL,*heightPROTEIN]
 elif insertPeaksManually == "HDL":
-    peakNames = ["HDL1","HDL2","HDL3","HDL4","PROTEIN"]
+    peakNames = ["HDL1","HDL2","HDL3","HDL4","HDL5","HDL6","HDL7","PROTEIN"]
     aM = []
-    nPeaks = 4
-    indices = [0.83760,0.84664,0.85739,0.910]
+    nPeaks = 8
+    indices = [0.82834298,0.83392093,0.84316387,0.85391685,0.848127,0.83858213,0.86173502,0.910]
+    meanPROTEIN = [0.910]
     for a in range(0,nPeaks):
         for i in range(0, len(values_x)):
             aM.append(np.abs(values_x[i]-indices[a]))
@@ -220,8 +227,9 @@ elif insertPeaksManually == "HDL":
         for i in pM:
             plt.plot(values_x[i],values_y[i],"x")
             plt.plot(values_x[i],values_y[i],"x")
-    pW = [0.00709,0.00776,0.00936,0.037]
-    pH = [0.3,0.3,0.3,0.25]
+    pW = [0.00418966,0.00401647,0.00438304,0.00587371,0.00495607,0.00406461,0.00710216,0.037]
+    pH = [0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.25]
+    widthPROTEIN = [0.037]
 
 if showMarkedPeaks == True:
     plt.plot(values_x,values_y, label = "Raw data")
@@ -290,8 +298,8 @@ if nPeaks > 0:
             percentAreas.append((areas[i]/totalArea)*100)
     elif fixedPeaks == True:
         if insertPeaksManually == "PLASMA":
-            popt, pcov = curve_fit(libCalc, values_x, values_y, p0=[*guess], maxfev = 10000000, bounds=([0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.0,   0.0,      0.0], 
-                                                                                                        [0.3,  0.3,  0.3,  0.3,  0.3,  0.3,  0.3,  0.3,  0.3,  0.3,  0.3,  0.3,  0.3,  np.inf,np.inf,np.inf]))
+            popt, pcov = curve_fit(libCalc, values_x, values_y, p0=[*guess], maxfev = 10000000, bounds=([0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.0,   0.0,      0.0], 
+                                                                                                        [0.3,  0.3,  0.3,  0.3,  0.3,  0.3,  0.3,  0.3,  0.3,  0.3,  0.3,  0.3,  0.3,  0.3,  0.3,  0.3,  0.3,  0.3,  0.3,  0.3,  0.3,  np.inf,np.inf,np.inf]))
         else:
             popt, pcov = curve_fit(libCalc, values_x, values_y, p0=[*guess], maxfev = 10000000, bounds=(0, np.inf))
         for i in range (0,nPeaks-1):
@@ -303,7 +311,6 @@ if nPeaks > 0:
         fit[nPeaks-1] = np.append(fit[nPeaks-1],popt[nPeaks])
         fit[nPeaks-1] = np.append(fit[nPeaks-1],popt[nPeaks+1])
         print("PROT :"  + str(fit[nPeaks-1]))
-        
         for i in range(0,nPeaks):
             gauss.append(fitFormula(values_x, fit[i]))
             areas.append(np.trapz(gauss[i],values_x))
@@ -311,16 +318,16 @@ if nPeaks > 0:
         for i in range(0,nPeaks):
             percentAreas.append((areas[i]/totalArea)*100)
         if insertPeaksManually == "PLASMA":
-            sumHDL = gauss[nHDL-1]
-            sumLDL = gauss[nHDL+nLDL-1]
-            sumVLDL = gauss[nHDL+nLDL+nVLDL-1]
+            sumHDL = copy.copy(gauss[nHDL-1])
+            sumLDL = copy.copy(gauss[nHDL+nLDL-1])
+            sumVLDL = copy.copy(gauss[nHDL+nLDL+nVLDL-1])
             for i in range (0, nHDL-1):
                 for y in range (0,len(gauss[i])):
                     sumHDL[y] += gauss[i][y]
             for i in range (nHDL, nHDL+nLDL-1):
                 for y in range (0,len(gauss[i])):
                     sumLDL[y] += gauss[i][y]
-            for i in range (nHDL+nLDL, nHDL+nLDL+nVLDL-1):
+            for i in range (nHDL+nLDL, nPeaks-1):
                 for y in range (0,len(gauss[i])):
                     sumVLDL[y] += gauss[i][y]
             areaHDL = np.trapz(sumHDL,values_x)
@@ -357,10 +364,11 @@ for (a,b) in zip(values_y,final_y):
     ss_res += (a-b)**2
     ss_tot += (a-ss_mean)**2
 r2 = 1 - (ss_res/ss_tot)
-
+print(r2)
 #Plot single fitted gaussians (nPeaks-1 = skip protein curve)
-for i in range (0,nPeaks-1):
+for i in range (0, nPeaks-1):
     plt.plot(values_x, gauss[i],label = peakNames[i], alpha=0.25)
+
 #Plot sum of VLDL,LDL and HDL
 if insertPeaksManually == "PLASMA" and fixedPeaks == True:
     ylim = plt.ylim()
