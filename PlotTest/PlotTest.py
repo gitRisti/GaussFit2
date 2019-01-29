@@ -63,10 +63,10 @@ def fitFormula(x,pars):
         return height*((width**2)/(((x-center)**2)+width**2))
 
 #Substract baseline and normalization (Normalization is necessary because data will not fit when using values that are too large or too small)
-#baseline = np.average(values_y[(len(values_y)-50):len(values_y)])
+
 maxValue = np.amax(values_y)
 for i in range (0,len(values_y)):
-    #values_y[i] -= baseline
+
     values_y[i] = values_y[i]/maxValue
 #Show raw data
 showRawData = False
@@ -394,7 +394,8 @@ plt.legend()
 plt.show()
 
 #Legacy code:
-
+    #baseline = np.average(values_y[(len(values_y)-50):len(values_y)])
+    #values_y[i] -= baseline
 #def fixedPeaksCalculation(x,*params):
 #    sum = 0
 #    for i in range (0,nPeaks*2,2):
